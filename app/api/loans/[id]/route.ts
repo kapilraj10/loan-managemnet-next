@@ -14,33 +14,30 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid loan ID" }, { status: 400 })
     }
-
     if (!loanName || !amount || !duration || interestRate === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
-
-    if (typeof amount !== "number" || typeof interestRate !== "number" || amount <= 0 || interestRate < 0) {
-      return NextResponse.json(
-        { error: "Amount must be positive and interest rate must be non-negative" },
-        { status: 400 },
-      )
+    if (typeof amount !== "number" || typeof interestRate !== "number" || typeof duration !== "number") {
+      return NextResponse.json({ error: "Amount, interest rate, and duration must be numbers" }, { status: 400 })
     }
 
     const db = await getDatabase()
     const loans = db.collection<Loan>("loans")
 
-    // Check if loan exists and user has permission
     const authHeader = request.headers.get("authorization")
     const user = getUserFromToken(authHeader)
     const query = user ? { _id: new ObjectId(id), createdBy: user.userId } : { _id: new ObjectId(id) }
 
     const existingLoan = await loans.findOne(query)
-    if (!existingLoan) {
-      return NextResponse.json({ error: "Loan not found" }, { status: 404 })
-    }
+    if (!existingLoan) return NextResponse.json({ error: "Loan not found" }, { status: 404 })
 
-    // Calculate updated values
-    const { totalInterest, totalPayable, remainingAmount } = calculateLoanValues(amount, interestRate, paidAmount || 0)
+    // Recalculate loan totals
+    const { totalInterest, totalPayable, remainingAmount } = calculateLoanValues(
+      amount,
+      interestRate,
+      duration,
+      paidAmount || 0
+    )
 
     const updateData = {
       loanName,
@@ -67,24 +64,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
-
-    if (!ObjectId.isValid(id)) {
-      return NextResponse.json({ error: "Invalid loan ID" }, { status: 400 })
-    }
+    if (!ObjectId.isValid(id)) return NextResponse.json({ error: "Invalid loan ID" }, { status: 400 })
 
     const db = await getDatabase()
     const loans = db.collection<Loan>("loans")
 
-    // Check if loan exists and user has permission
     const authHeader = request.headers.get("authorization")
     const user = getUserFromToken(authHeader)
     const query = user ? { _id: new ObjectId(id), createdBy: user.userId } : { _id: new ObjectId(id) }
 
     const result = await loans.deleteOne(query)
-
-    if (result.deletedCount === 0) {
-      return NextResponse.json({ error: "Loan not found" }, { status: 404 })
-    }
+    if (result.deletedCount === 0) return NextResponse.json({ error: "Loan not found" }, { status: 404 })
 
     return NextResponse.json({ message: "Loan deleted successfully" })
   } catch (error) {
