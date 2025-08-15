@@ -44,11 +44,11 @@ export function LoanTable({ loans, onUpdate, onDelete, loading }: LoanTableProps
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount)
-  }
+  return new Intl.NumberFormat("en-NP",
+    style: "currency",
+    currency: "NPR",
+  }).format(amount);
+}
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString("en-US", {
