@@ -3,11 +3,12 @@ import { getDatabase } from "@/lib/mongodb"
 import { createLoanDocument, type Loan } from "@/lib/models/loan"
 import { getUserFromToken } from "@/lib/auth"
 
-// Helper function to calculate simple interest
-function calculateLoan(amount: number, interestRate: number, duration: number) {
+// Helper function to calculate loan values
+function calculateLoanValues(amount: number, interestRate: number, duration: number, paidAmount = 0) {
   const totalInterest = (amount * interestRate * duration) / 100
-  const totalAmount = amount + totalInterest
-  return { totalInterest, totalAmount }
+  const totalPayable = amount + totalInterest
+  const remainingAmount = totalPayable - paidAmount
+  return { totalInterest, totalPayable, remainingAmount }
 }
 
 export async function GET(request: NextRequest) {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     const { loanName, amount, duration, interestRate } = body
 
     // Validation
-    if (!loanName || !amount || !duration || !interestRate) {
+    if (!loanName || amount === undefined || duration === undefined || interestRate === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -45,8 +46,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Amount, interest rate, and duration must be positive" }, { status: 400 })
     }
 
-    // Calculate total interest and total repayable amount
-    const { totalInterest, totalAmount } = calculateLoan(amount, interestRate, duration)
+    // Calculate loan totals
+    const { totalInterest, totalPayable, remainingAmount } = calculateLoanValues(amount, interestRate, duration, 0)
 
     // Get user from token or use default
     const authHeader = request.headers.get("authorization")
@@ -63,7 +64,8 @@ export async function POST(request: NextRequest) {
       interestRate,
       paidAmount: 0,
       totalInterest,
-      totalAmount,
+      totalPayable,
+      remainingAmount,
       createdBy,
     })
 
