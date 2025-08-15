@@ -43,12 +43,13 @@ export function LoanTable({ loans, onUpdate, onDelete, loading }: LoanTableProps
     }
   }
 
-  const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-IN",
-    style: "currency",
-    currency: "NPR",
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-IN", { 
+    style: "currency", 
+    currency: "NPR" 
   }).format(amount);
 }
+
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString("en-US", {
