@@ -44,7 +44,7 @@ export function LoanTable({ loans, onUpdate, onDelete, loading }: LoanTableProps
   }
 
   const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("en-NP",
+  return new Intl.NumberFormat("en-IN",
     style: "currency",
     currency: "NPR",
   }).format(amount);
